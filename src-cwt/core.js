@@ -1,3 +1,5 @@
+/*global R*/
+
 //
 // Core file contains extensions for RamdaJS. All extensions will be stored in the 
 // object RExt.
@@ -5,7 +7,7 @@
 
 var RExt = window.RExt || (window.RExt = {});
 
-// notEquals a -> b -> Boolean
+// notEquals a -> b -> Boolean 
 RExt.notEquals = R.complement(R.equals);
 
 // Maybe:: a -> Just a | Nothing
@@ -29,7 +31,7 @@ RExt._nothing = Object.freeze({
   isPresent: () => false,
   ifPresent: (f) => RExt._nothing,
   orElse: (v) => v,
-  fold: (presentF, notPresentF) => notPresentF(value),
+  fold: (presentF, notPresentF) => notPresentF(),
   toString: () => "Nothing"
 });
 
@@ -76,7 +78,7 @@ RExt.Either.Right = function(value) {
   };
 };
 
-// (() -> a) -> IO a
+// IO:: (() -> a) -> IO a
 RExt.IO = sideEffectFn => ({
   chain: sideEffectFnB => RExt.IO(() => sideEffectFnB(sideEffectFn()).run()),
   map: f => RExt.IO(() => f(sideEffectFn())),
@@ -88,8 +90,10 @@ RExt.nestedPath = R.pipe(
   R.map(R.ifElse(R.is(Number), R.lensIndex, R.lensProp)),
   R.apply(R.compose));
 
+RExt.log = console.log.bind(console);
+
 // tapLogger:: a -> a  
-RExt.tapLogger = R.tap(x => console.log(x));
+RExt.tapLogger = R.tap(RExt.log);
 
 // mapTapLogger:: a -> a
 RExt.mapTapLogger = R.map(RExt.tapLogger);
@@ -114,7 +118,9 @@ RExt.raiseError = error => {
   throw new Error(error);
 };
 
-// ---------------------------------------------------------
+// ------------------------------------------------------------------------------------------------------------------
+// ------------------------------------------------ DEPRECATED ------------------------------------------------------
+// ------------------------------------------------------------------------------------------------------------------
 
 // propertyPath:: [NumberOrInt] -> Lens 
 R.propertyPath = RExt.nestedPath;

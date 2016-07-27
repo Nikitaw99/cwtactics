@@ -1,3 +1,5 @@
+/*global R*/
+
 var CwGame = window.CwGame || (window.CwGame = {});
 
 (function(exports) {
@@ -462,10 +464,10 @@ var CwGame = window.CwGame || (window.CwGame = {});
 
     return ({
       model: data.model,
-      unit: createCopy(unit, {
+      unit: createCopy(data.model.unit, {
         fuel: data.unit.fuel - getMoveCostsOfType(
-          model.moveTypes[model.unitTypes[data.unit.type].moveType],
-          model.map.tiles[newX][newY]),
+          data.model.moveTypes[data.model.unitTypes[data.unit.type].moveType],
+          data.model.map.tiles[newX][newY]),
         x: newX,
         y: newY
       })
@@ -484,7 +486,7 @@ var CwGame = window.CwGame || (window.CwGame = {});
 
       return createCopy(model, {
         units: fjs.map(unit => unit == movingUnit ? newMovingUnit : unit, model.units)
-      })
+      });
     });
 
   exports.produceUnit = (factoryId, type, model) => eitherRight(model)

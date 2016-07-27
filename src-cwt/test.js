@@ -1,3 +1,5 @@
+/*global R, RExt, cwtGame*/
+
 cwtGame.doTest = () => {
 
 
@@ -119,7 +121,7 @@ cwtGame.doTest = () => {
   //
   //               CWT GAME SPECIFICATION
   //
-  //               VERSION 0.36
+  //               VERSION 0.35.095
   //
   // TODO: 0.37 - COMMANDERS
   //   ADD ANDY HP HEAL MECHANIC
