@@ -40,13 +40,13 @@ RExt.Nothing = () => RExt._nothing;
 RExt.Either = {};
 
 // (() -> a) -> Either error, a
-RExt.Either.tryIt = (f) => {
+RExt.Either.tryIt = R.curryN(1, (f) => {
   try {
-    return RExt.Either.Right(f())
+    return RExt.Either.Right(f());
   } catch (e) {
-    return RExt.Either.Left(e)
+    return RExt.Either.Left(e);
   }
-};
+});
 
 RExt.Either.Left = function(value) {
   return {
@@ -104,7 +104,7 @@ RExt.mapTapLogger = R.map(RExt.tapLogger);
 // string that are too long will be cut down to the wanted length - 3 and appended
 // with the string "..."
 //
-// mapToFixedLength :: String -> String
+// mapToFixedLength :: s -> s
 RExt.mapToFixedLength = R.curry((wantedLength, s) => R.cond([
   [R.propSatisfies(R.gt(R.__, wantedLength), "length"), R.pipe(R.take(wantedLength - 3), R.append("..."), R.join(""))],
   [R.propSatisfies(R.lt(R.__, wantedLength), "length"), s => {

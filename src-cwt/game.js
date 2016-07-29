@@ -1,6 +1,6 @@
 /*global R*/
 
-var CwGame = window.CwGame || (window.CwGame = {});
+var Cg = window.Cg || (window.Cg = {});
 
 (function(exports) {
   "use strict";
@@ -863,3 +863,5 @@ var CwGame = window.CwGame || (window.CwGame = {});
 
 // freeze API
 window.cwtGame = cwtCore.immutable(cwtGame);
+
+Cg = window.cwtGame;
