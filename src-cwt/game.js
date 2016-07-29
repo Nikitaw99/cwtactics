@@ -856,9 +856,6 @@ var Cg = window.Cg || (window.Cg = {});
       ]),
     R.append({ object: -1, type: "map" }));
 
-  exports.GAME_VERSION = "0.36";
-  exports.GAME_AI_VERSION = "DumbBoy v. 0.1 Alpha";
-
 })(window.cwtGame || (window.cwtGame = {}));
 
 // freeze API

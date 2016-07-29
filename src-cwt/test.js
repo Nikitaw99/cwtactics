@@ -114,12 +114,11 @@ Ct.assertEquals = R.curry(
 Ct.assertNotEquals = R.curry(
   (expected, actual) => Ct.assertThat(expected !== actual, "expected different than: " + expected + ", but was equal"));
 
-// specification:: s -> (-> Boolean) -> (-> o)
 Ct.specification = (description, expectations) => () => R.pipe(
   R.always({
     description,
     type: "specification",
-    cases: R.map(expectation => expectation())(expectations),
+    cases: R.map(expectation => expectation(), expectations),
     status: {
       executionTimeInMs: -1
     }
@@ -150,8 +149,6 @@ Ct.specification = (description, expectations) => () => R.pipe(
     data)
 )();
 
-
-// expectation:: s -> (-> Boolean) -> (-> o)
 Ct.expectation = (description, expectation) => () => ({
   description,
   type: "expectation",
@@ -159,7 +156,7 @@ Ct.expectation = (description, expectation) => () => ({
     .IO(() => expectation)
     .map(test => {
       const startTime = Date.now();
-      const result = test();
+      const result = RExt.Either.tryIt(test).fold(R.always("FAILED WITH ERROR"), R.identity);
       const executionTimeInMs = Date.now() - startTime;
       return {
         executionTimeInMs,
@@ -207,7 +204,7 @@ Ct.nextTurnSpec = Ct.specification("map action: next turn", [
       R.always(Ct.testGameModel),
       Cg.nextTurn,
       R.map(R.view(R.lensPath(["turn", "owner"]))),
-      Ct.foldEither(Ct.assertNeverCalled, Ct.assertNotEquals(R.always(Ct.testGameModel).turn.owner)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertNotEquals(Ct.testGameModel.turn.owner)))),
 
   Ct.expectation("when the last player ends his turn, then the day counter increases",
     R.pipe(
@@ -215,7 +212,7 @@ Ct.nextTurnSpec = Ct.specification("map action: next turn", [
       R.set(R.lensPath(["turn", "owner"]), 3),
       Cg.nextTurn,
       R.map(R.view(R.lensPath(["turn", "day"]))),
-      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(R.always(Ct.testGameModel).turn.day + 1)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(Ct.testGameModel.turn.day + 1)))),
 
   Ct.expectation("after a day change the day limit counter decreases",
     R.pipe(
@@ -223,7 +220,7 @@ Ct.nextTurnSpec = Ct.specification("map action: next turn", [
       R.set(R.lensPath(["turn", "owner"]), 3),
       Cg.nextTurn,
       R.map(R.view(R.lensPath(["limits", "leftDays"]))),
-      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(R.always(Ct.testGameModel).limits.leftDays - 1)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(Ct.testGameModel.limits.leftDays - 1)))),
 
   Ct.expectation("increases the gold of the turn owner by the sum of all funds given by properties",
     R.pipe(
@@ -254,7 +251,7 @@ Ct.waitSpec = Ct.specification("Unit-Action: Wait", [
       R.over(R.lensProp("actables"), R.over(R.lensIndex(0), R.T)),
       R.curry(Cg.wait)(0),
       R.map(R.view(R.lensPath(["actables", 0]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(false)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(false)))),
 
   Ct.expectation("does not changes the state of other units",
     R.pipe(
@@ -263,7 +260,7 @@ Ct.waitSpec = Ct.specification("Unit-Action: Wait", [
       R.curry(Cg.wait)(0),
       R.map(R.view(R.lensProp("actables"))),
       R.map(R.reduce((a, b) => b ? a + 1 : a, 0)),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(49)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(49)))),
 
   Ct.expectation("cannot set unit into wait status if unit id is illegal (left OOB)",
     R.pipe(
@@ -286,10 +283,7 @@ Ct.waitSpec = Ct.specification("Unit-Action: Wait", [
 ]);
 
 Ct.captureSpec = Ct.specification("Unit-Action: Capture", [
-  Ct.moveSpec
-]);
-
-Ct.captureSpec = Ct.specification("capture action", () => ([
+  Ct.moveSpec,
 
   Ct.expectation("game declines call when capturer and property aren't on the same tile",
     R.pipe(
@@ -354,7 +348,7 @@ Ct.captureSpec = Ct.specification("capture action", () => ([
       R.set(RExt.nestedPath(["properties", 0, "owner"]), 1),
       R.curry(Cg.captureProperty)(0, 0),
       R.map(R.view(RExt.nestedPath(["properties", 0, "points"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(10))
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(10))
     )),
 
   Ct.expectation("the capture value is hp relative",
@@ -370,7 +364,7 @@ Ct.captureSpec = Ct.specification("capture action", () => ([
       R.set(RExt.nestedPath(["properties", 0, "owner"]), 1),
       R.curry(Cg.captureProperty)(0, 0),
       R.map(R.view(RExt.nestedPath(["properties", 0, "points"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(15))
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(15))
     )),
 
   Ct.expectation("a capture changes the owner of the property if points fall down to zero",
@@ -429,7 +423,7 @@ Ct.captureSpec = Ct.specification("capture action", () => ([
       R.set(RExt.nestedPath(["players", 1, "team"]), 2),
       R.curry(Cg.captureProperty)(0, 0),
       R.map(R.view(RExt.nestedPath(["properties", 0, "type"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals("PRTB"))
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals("PRTB"))
     )),
 
   Ct.expectation("changing owner leads into a loss of the previous owner when capture_loose_after_captured is enabled",
@@ -448,8 +442,8 @@ Ct.captureSpec = Ct.specification("capture action", () => ([
       R.curry(Cg.captureProperty)(0, 0),
       Ct.foldEither(Ct.assertNeverCalled, R.pipe(
         R.where({
-          properties: R.pipe(R.reduce((a, b) => b.owner == 1 ? a + 1 : a, 0),Ct.assertEquals(0)),
-          players: R.pipe(R.nth(0), R.prop("team"),Ct.assertEquals(-1))
+          properties: R.pipe(R.reduce((a, b) => b.owner == 1 ? a + 1 : a, 0), Ct.assertEquals(0)),
+          players: R.pipe(R.nth(0), R.prop("team"), Ct.assertEquals(-1))
         })
       ))
     )),
@@ -470,15 +464,16 @@ Ct.captureSpec = Ct.specification("capture action", () => ([
       R.set(RExt.nestedPath(["limits", "minimumProperties"]), 5),
       R.curry(Cg.captureProperty)(0, 0),
       Ct.foldEither(Ct.assertNeverCalled, R.where({
-        properties: R.pipe(R.reduce((a, b) => b.owner == 1 ? a + 1 : a, 0),Ct.assertEquals(0)),
-        players: R.pipe(R.nth(1), R.prop("team"),Ct.assertEquals(-1))
+        properties: R.pipe(R.reduce((a, b) => b.owner == 1 ? a + 1 : a, 0), Ct.assertEquals(0)),
+        players: R.pipe(R.nth(1), R.prop("team"), Ct.assertEquals(-1))
       }))
     )),
 
   Ct.expectation("updates fog when property is captured", Ct.assertNeverCalled)
-]));
+]);
 
-Ct.fireRocketSpec = Ct.specification("fire rocket", () => ([
+Ct.fireRocketSpec = Ct.specification("fire rocket", [
+  Ct.moveSpec,
 
   Ct.expectation("illegal position will be declined",
     R.pipe(
@@ -604,11 +599,11 @@ Ct.fireRocketSpec = Ct.specification("fire rocket", () => ([
       R.set(RExt.nestedPath(["units", 0, "owner"]), 0),
       R.curry(Cg.fireRocket)(0, 0, 2, 0),
       R.map(R.view(RExt.nestedPath(["units", 0, "hp"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(99))
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(99))
     ))
-]));
+]);
 
-Ct.elapseTimeSpec = Ct.specification("elapse time", () => ([
+Ct.elapseTimeSpec = Ct.specification("elapse time", [
 
   Ct.expectation("negative time will be declined",
     R.pipe(
@@ -623,7 +618,7 @@ Ct.elapseTimeSpec = Ct.specification("elapse time", () => ([
       R.set(RExt.nestedPath(["limits", "leftTurnTime"]), 100),
       R.curry(Cg.elapseTime)(50),
       R.map(R.view(RExt.nestedPath(["limits", "leftTurnTime"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(50))
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(50))
     )),
 
   Ct.expectation("decreases the left game time in the limit object",
@@ -632,7 +627,7 @@ Ct.elapseTimeSpec = Ct.specification("elapse time", () => ([
       R.set(RExt.nestedPath(["limits", "leftGameTime"]), 100),
       R.curry(Cg.elapseTime)(50),
       R.map(R.view(RExt.nestedPath(["limits", "leftGameTime"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(50))
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(50))
     )),
 
   Ct.expectation("increases turn owner when leftTurnTime falls down to zero",
@@ -642,7 +637,7 @@ Ct.elapseTimeSpec = Ct.specification("elapse time", () => ([
       R.set(RExt.nestedPath(["turn", "owner"]), 0),
       R.curry(Cg.elapseTime)(100),
       R.map(R.view(RExt.nestedPath(["turn", "owner"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(1))
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(1))
     )),
 
   Ct.expectation("deactivates all players when game timit falls dawn to zero",
@@ -652,11 +647,11 @@ Ct.elapseTimeSpec = Ct.specification("elapse time", () => ([
       R.curry(Cg.elapseTime)(100),
       R.map(R.view(RExt.nestedPath(["players"]))),
       R.map(R.reduce((a, b) => b.team > -1 ? a + 1 : a, 0)),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(0))
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(0))
     ))
-]));
+]);
 
-Ct.yieldGameSpec = Ct.specification("yield game", () => ([
+Ct.yieldGameSpec = Ct.specification("yield game", [
 
   Ct.expectation("decilines when a player is already disabled",
     R.pipe(
@@ -684,11 +679,11 @@ Ct.yieldGameSpec = Ct.specification("yield game", () => ([
       R.always(Ct.testGameModel),
       R.curry(Cg.yieldGame)(0),
       R.map(R.view(RExt.nestedPath(["players", 0, "team"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(-1))
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(-1))
     ))
-]));
+]);
 
-Ct.produceUnitSpec = Ct.specification("produce unit", () => ([
+Ct.produceUnitSpec = Ct.specification("produce unit", [
 
   Ct.expectation("declined when factory does not belongs to the turn owner",
     R.pipe(
@@ -768,7 +763,7 @@ Ct.produceUnitSpec = Ct.specification("produce unit", () => ([
       R.curry(Cg.produceUnit)(0, "UNTA"),
       Ct.foldEither(
         Ct.assertNeverCalled,
-        R.pipe(R.view(RExt.nestedPath(["players", 0, "gold"])),Ct.assertEquals(0))))),
+        R.pipe(R.view(RExt.nestedPath(["players", 0, "gold"])), Ct.assertEquals(0))))),
 
   Ct.expectation("creates a new unit on the factory",
     R.pipe(
@@ -786,7 +781,7 @@ Ct.produceUnitSpec = Ct.specification("produce unit", () => ([
       Ct.foldEither(Ct.assertNeverCalled, R.pipe(
         R.view(RExt.nestedPath(["units", 0])),
         unit => "{" + unit.x + "," + unit.y + "}",
-       Ct.assertEquals("{0,0}"))))),
+        Ct.assertEquals("{0,0}"))))),
 
   Ct.expectation("created new unit cannot act in the active turn",
     R.pipe(
@@ -801,10 +796,10 @@ Ct.produceUnitSpec = Ct.specification("produce unit", () => ([
       R.curry(Cg.produceUnit)(0, "UNTA"),
       Ct.foldEither(Ct.assertNeverCalled, R.pipe(
         R.view(RExt.nestedPath(["actables", 0])),
-       Ct.assertEquals(false))))),
-]));
+        Ct.assertEquals(false))))),
+]);
 
-Ct.destroyUnitSpec = Ct.specification("destroy unit", () => ([
+Ct.destroyUnitSpec = Ct.specification("destroy unit", [
 
   Ct.expectation("declined when unit id is invalid (roob)",
     R.pipe(
@@ -823,7 +818,7 @@ Ct.destroyUnitSpec = Ct.specification("destroy unit", () => ([
       R.always(Ct.testGameModel),
       R.curry(Cg.destroyUnit)(0),
       R.map(R.view(RExt.nestedPath(["units", 0, "owner"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(-1)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(-1)))),
 
   Ct.expectation("player does looses game when he/she has at least one units left an noUnitsLeftMeansLoose is enabled",
     R.pipe(
@@ -838,7 +833,7 @@ Ct.destroyUnitSpec = Ct.specification("destroy unit", () => ([
       R.set(RExt.nestedPath(["cfg", "noUnitsLeftMeansLoose"]), true),
       R.curry(Cg.destroyUnit)(0),
       R.map(R.view(RExt.nestedPath(["players", 0, "team"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(1)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(1)))),
 
   Ct.expectation("player looses game when he/she has no units left an noUnitsLeftMeansLoose is enabled",
     R.pipe(
@@ -852,12 +847,13 @@ Ct.destroyUnitSpec = Ct.specification("destroy unit", () => ([
       R.set(RExt.nestedPath(["cfg", "noUnitsLeftMeansLoose"]), true),
       R.curry(Cg.destroyUnit)(0),
       R.map(R.view(RExt.nestedPath(["players", 0, "team"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(-1)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(-1)))),
 
   Ct.expectation("updates fog", Ct.assertNeverCalled)
-]));
+]);
 
-Ct.attackUnitSpec = Ct.specification("attack units", () => ([
+Ct.attackUnitSpec = Ct.specification("attack units", [
+  Ct.moveSpec,
 
   Ct.expectation("declined when attacker id is invalid (roob)",
     R.pipe(
@@ -906,7 +902,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["actables", 0]), true),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 1, "hp"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertNotEquals(99)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertNotEquals(99)))),
 
   Ct.expectation("defender lowers attackers health when he/she survives and is direct and standing on a neighbour tile",
     R.pipe(
@@ -924,7 +920,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["actables", 0]), true),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 0, "hp"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertNotEquals(99)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertNotEquals(99)))),
 
   Ct.expectation("defender does not lowers attackers health when he/she dies",
     R.pipe(
@@ -942,7 +938,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["actables", 0]), true),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 0, "hp"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(99)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(99)))),
 
   Ct.expectation("defender does not lowers attackers health when he/she does not standing on a neighbour tile",
     R.pipe(
@@ -960,7 +956,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["actables", 0]), true),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 0, "hp"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(99)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(99)))),
 
   Ct.expectation("defender does not lowers attackers health when he/she is indirect",
     R.pipe(
@@ -978,7 +974,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["actables", 0]), true),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 0, "hp"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(99)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(99)))),
 
   Ct.expectation("attackers damage is relative to it's hp",
     R.pipe(
@@ -996,7 +992,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["actables", 0]), true),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 0, "hp"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(84)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(84)))),
 
   Ct.expectation("defenders couter attack damage is relative to it's hp",
     R.pipe(
@@ -1015,7 +1011,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["actables", 0]), true),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 0, "hp"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(74)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(74)))),
 
   Ct.expectation("attackers damage is relative to defenders tile defence",
     R.pipe(
@@ -1035,7 +1031,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["actables", 0]), true),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 1, "hp"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(74)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(74)))),
 
   Ct.expectation("attackers damage is relative to defenders property defence when tile is occuppied by a property",
     R.pipe(
@@ -1058,7 +1054,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["actables", 0]), true),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 1, "hp"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(89)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(89)))),
 
   Ct.expectation("defenders couter attack damage is relative to attackers tile defence",
     R.pipe(
@@ -1079,7 +1075,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["actables", 0]), true),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 0, "hp"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(74)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(74)))),
 
   Ct.expectation("defenders couter attack damage is relative to attackers property defence when tile is occuppied by a property",
     R.pipe(
@@ -1102,7 +1098,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["actables", 0]), true),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 1, "hp"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(79)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(79)))),
 
   Ct.expectation("attacker uses main weapon if given and ammo is greater zero",
     R.pipe(
@@ -1123,7 +1119,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["unitTypes", "UNTD", "secondaryWeaponDamage", "UNTD"]), 10),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 1, "health"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(49)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(49)))),
 
   Ct.expectation("attacker uses secondary weapon if exists and ammo is zero",
     R.pipe(
@@ -1144,7 +1140,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["unitTypes", "UNTD", "secondaryWeaponDamage", "UNTD"]), 10),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 1, "health"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(89)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(89)))),
 
   Ct.expectation("primary weapon attacks does uses ammo",
     R.pipe(
@@ -1163,7 +1159,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["actables", 0]), true),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 0, "ammo"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(0)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(0)))),
 
   Ct.expectation("secondary weapon attacks does not uses ammo",
     R.pipe(
@@ -1184,7 +1180,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["unitTypes", "UNTD", "secondaryWeaponDamage", "UNTD"]), 10),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["units", 0, "ammo"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(1)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(1)))),
 
   Ct.expectation("attackers owner power value increases by damage dealt",
     R.pipe(
@@ -1207,7 +1203,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["players", 0, "power"]), 0),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["players", 0, "power"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertThat(R.gte(R.__, 500))))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertThat(R.gte(R.__, 500))))),
 
   Ct.expectation("attackers owner power value increases by damage received from counter",
     R.pipe(
@@ -1230,7 +1226,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["players", 0, "power"]), 0),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["players", 0, "power"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertThat(R.gte(R.__, 1000))))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertThat(R.gte(R.__, 1000))))),
 
   Ct.expectation("defenders owner power value increases by damage received ",
     R.pipe(
@@ -1253,7 +1249,7 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["players", 0, "power"]), 0),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["players", 0, "power"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertThat(R.gte(R.__, 1000))))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertThat(R.gte(R.__, 1000))))),
 
   Ct.expectation("defenders owner power value increases by damage dealt from counter",
     R.pipe(
@@ -1276,13 +1272,14 @@ Ct.attackUnitSpec = Ct.specification("attack units", () => ([
       R.set(RExt.nestedPath(["players", 0, "power"]), 0),
       R.curry(Cg.attackUnit)(0, 1),
       R.map(R.view(RExt.nestedPath(["players", 0, "power"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertThat(R.gte(R.__, 1500))))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertThat(R.gte(R.__, 1500))))),
 
   Ct.expectation("updates fog when counter attack kills attacker and fog is enabled", Ct.assertNeverCalled),
   Ct.expectation("does not updates fog when counter attack kills attacker and fog is disabled", Ct.assertNeverCalled)
-]));
+]);
 
-Ct.activatePowerSpec = Ct.specification("activate power", () => ([
+Ct.activatePowerSpec = Ct.specification("activate power", [
+  Ct.moveSpec,
 
   Ct.expectation("declined when the player is is invalid (loob)",
     R.pipe(
@@ -1318,7 +1315,7 @@ Ct.activatePowerSpec = Ct.specification("activate power", () => ([
       R.set(RExt.nestedPath(["players", 0, "activePowerLevel"]), 1),
       R.curry(Cg.activatePower)(0),
       R.map(R.view(RExt.nestedPath(["players", 0, "activePowerLevel"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(2)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(2)))),
 
   Ct.expectation("sets the power value of the player to zero",
     R.pipe(
@@ -1327,10 +1324,11 @@ Ct.activatePowerSpec = Ct.specification("activate power", () => ([
       R.set(RExt.nestedPath(["players", 0, "power"]), 1000),
       R.curry(Cg.activatePower)(0),
       R.map(R.view(RExt.nestedPath(["players", 0, "power"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(0))))
-]));
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(0))))
+]);
 
-Ct.activateSuperPowerSpec = Ct.specification("activate super power", () => ([
+Ct.activateSuperPowerSpec = Ct.specification("activate super power", [
+  Ct.moveSpec,
 
   Ct.expectation("declined when the player is is invalid (loob)",
     R.pipe(
@@ -1366,7 +1364,7 @@ Ct.activateSuperPowerSpec = Ct.specification("activate super power", () => ([
       R.set(RExt.nestedPath(["players", 0, "activePowerLevel"]), 1),
       R.curry(Cg.activateSuperPower)(0),
       R.map(R.view(RExt.nestedPath(["players", 0, "activePowerLevel"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(3)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(3)))),
 
   Ct.expectation("sets the power value of the player to zero",
     R.pipe(
@@ -1375,10 +1373,11 @@ Ct.activateSuperPowerSpec = Ct.specification("activate super power", () => ([
       R.set(RExt.nestedPath(["players", 0, "power"]), 1000),
       R.curry(Cg.activateSuperPower)(0),
       R.map(R.view(RExt.nestedPath(["players", 0, "power"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(0))))
-]));
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(0))))
+]);
 
-Ct.resupplyNeightboursSpec = Ct.specification("resupply neightbours", () => ([
+Ct.resupplyNeightboursSpec = Ct.specification("resupply neightbours", [
+  Ct.moveSpec,
 
   Ct.expectation("declines when supplier id is invalid (loob)",
     R.pipe(
@@ -1426,7 +1425,7 @@ Ct.resupplyNeightboursSpec = Ct.specification("resupply neightbours", () => ([
           R.view(RExt.nestedPath(["units", 2, "fuel"]))(model)
         ];
       }),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals([35, 35])))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals([35, 35])))),
 
   Ct.expectation("refills ammo in all own units in range",
     R.pipe(
@@ -1447,7 +1446,7 @@ Ct.resupplyNeightboursSpec = Ct.specification("resupply neightbours", () => ([
           R.view(RExt.nestedPath(["units", 2, "ammo"]))(model)
         ];
       }),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals([5, 5])))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals([5, 5])))),
 
   Ct.expectation("ignores allied units",
     R.pipe(
@@ -1463,7 +1462,7 @@ Ct.resupplyNeightboursSpec = Ct.specification("resupply neightbours", () => ([
       R.set(RExt.nestedPath(["unitTypes", "UNTA", "maxAmmo"]), 5),
       R.curry(Cg.unloadUnit)(0),
       R.map(R.view(RExt.nestedPath(["units", 1, "ammo"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(1)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(1)))),
 
   Ct.expectation("ignores enemy units",
     R.pipe(
@@ -1479,10 +1478,11 @@ Ct.resupplyNeightboursSpec = Ct.specification("resupply neightbours", () => ([
       R.set(RExt.nestedPath(["unitTypes", "UNTA", "maxAmmo"]), 5),
       R.curry(Cg.unloadUnit)(0),
       R.map(R.view(RExt.nestedPath(["units", 1, "ammo"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(1))))
-]));
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(1))))
+]);
 
-Ct.unloadUnitSpec = Ct.specification("unload unit", () => ([
+Ct.unloadUnitSpec = Ct.specification("unload unit", [
+  Ct.moveSpec,
 
   Ct.expectation("declines when load id is invalid (loob)",
     R.pipe(
@@ -1537,7 +1537,7 @@ Ct.unloadUnitSpec = Ct.specification("unload unit", () => ([
       R.set(RExt.nestedPath(["units", 1, "y"]), 1),
       R.curry(Cg.unloadUnit)(0, 1, 1),
       R.map(R.view(RExt.nestedPath(["units", 0, "loadedIn"]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(1)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(1)))),
 
   Ct.expectation("removes loaded in when target direction is empty",
     R.pipe(
@@ -1547,7 +1547,7 @@ Ct.unloadUnitSpec = Ct.specification("unload unit", () => ([
       R.set(RExt.nestedPath(["units", 1, "x"]), 1),
       R.set(RExt.nestedPath(["units", 1, "y"]), 1),
       R.curry(Cg.unloadUnit)(0, 1, 1),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(-1)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(-1)))),
 
   Ct.expectation("sets position when target direction is empty",
     R.pipe(
@@ -1559,7 +1559,7 @@ Ct.unloadUnitSpec = Ct.specification("unload unit", () => ([
       R.curry(Cg.unloadUnit)(0, 1, 1),
       R.map(R.view(RExt.nestedPath(["units", 0]))),
       R.map(unit => "{" + unit.x + "," + unit.y + "}"),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals("{2,1}")))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals("{2,1}")))),
 
   Ct.expectation("sets load into wait mode when target direction is empty",
     R.pipe(
@@ -1570,7 +1570,7 @@ Ct.unloadUnitSpec = Ct.specification("unload unit", () => ([
       R.set(RExt.nestedPath(["units", 1, "y"]), 1),
       R.curry(Cg.unloadUnit)(0, 1, 1),
       R.map(R.view(RExt.nestedPath(["actables", 0]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(false)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(false)))),
 
   Ct.expectation("sets transporter into wait mode when target direction is empty",
     R.pipe(
@@ -1580,7 +1580,7 @@ Ct.unloadUnitSpec = Ct.specification("unload unit", () => ([
       R.set(RExt.nestedPath(["units", 1, "x"]), 1),
       R.set(RExt.nestedPath(["units", 1, "y"]), 1),
       R.map(R.view(RExt.nestedPath(["actables", 1]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(false)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(false)))),
 
   Ct.expectation("sets transporter into wait mode when target direction is not empty",
     R.pipe(
@@ -1593,7 +1593,7 @@ Ct.unloadUnitSpec = Ct.specification("unload unit", () => ([
       R.set(RExt.nestedPath(["units", 2, "y"]), 1),
       R.curry(Cg.unloadUnit)(0, 1, 1),
       R.map(R.view(RExt.nestedPath(["actables", 1]))),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(false)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(false)))),
 
   Ct.expectation("declines when the transporter cannot act",
     R.pipe(
@@ -1603,9 +1603,10 @@ Ct.unloadUnitSpec = Ct.specification("unload unit", () => ([
       R.set(RExt.nestedPath(["actables", 1]), false),
       R.curry(Cg.unloadUnit)(0, 1, 0),
       Ct.foldEither(Ct.assertStartsWith("iae:uca"), Ct.assertNeverCalled)))
-]));
+]);
 
-Ct.loadUnitSpec = Ct.specification("load unit", () => ([
+Ct.loadUnitSpec = Ct.specification("load unit", [
+  Ct.moveSpec,
 
   Ct.expectation("declines when load id is invalid (loob)",
     R.pipe(
@@ -1689,7 +1690,7 @@ Ct.loadUnitSpec = Ct.specification("load unit", () => ([
       R.curry(Cg.loadUnit)(0, 1),
       R.view(RExt.nestedPath(["units", 0])),
       R.map(unit => "{" + unit.x + "," + unit.y + "}"),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals("{-1,-1}")))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals("{-1,-1}")))),
 
   Ct.expectation("load is loaded in transporter",
     R.pipe(
@@ -1704,7 +1705,7 @@ Ct.loadUnitSpec = Ct.specification("load unit", () => ([
       R.set(RExt.nestedPath(["units", "UNTA", "maxLoadCount"]), 2),
       R.curry(Cg.loadUnit)(0, 1),
       R.view(RExt.nestedPath(["units", 0, "loadedIn"])),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(-1)))),
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(-1)))),
 
   Ct.expectation("transporters load count increases",
     R.pipe(
@@ -1719,10 +1720,10 @@ Ct.loadUnitSpec = Ct.specification("load unit", () => ([
       R.set(RExt.nestedPath(["units", "UNTA", "maxLoadCount"]), 2),
       R.curry(Cg.loadUnit)(0, 1),
       R.view(RExt.nestedPath(["units", 1, "loadedIn"])),
-      Ct.foldEither(Ct.assertNeverCalled,Ct.assertEquals(-2))))
-]));
+      Ct.foldEither(Ct.assertNeverCalled, Ct.assertEquals(-2))))
+]);
 
-Ct.getActableObjectsSpec = Ct.specification("get actables objects", () => ([
+Ct.getActableObjectsSpec = Ct.specification("get actables objects", [
   Ct.expectation("returns all actable units of the turn owner",
     R.pipe(
       R.always(Ct.testGameModel),
@@ -1733,7 +1734,7 @@ Ct.getActableObjectsSpec = Ct.specification("get actables objects", () => ([
       R.filter(R.where({
         type: R.equals("unit")
       })),
-      R.pipe(R.length,Ct.assertEquals(2)))),
+      R.pipe(R.length, Ct.assertEquals(2)))),
 
   Ct.expectation("returns all actable properties of the turn owner",
     R.pipe(
@@ -1748,7 +1749,7 @@ Ct.getActableObjectsSpec = Ct.specification("get actables objects", () => ([
       R.filter(R.where({
         type: R.equals("property")
       })),
-      R.pipe(R.length,Ct.assertEquals(2)))),
+      R.pipe(R.length, Ct.assertEquals(2)))),
 
   Ct.expectation("contains the object-less map actions",
     R.pipe(
@@ -1757,10 +1758,10 @@ Ct.getActableObjectsSpec = Ct.specification("get actables objects", () => ([
       R.filter(R.where({
         type: R.equals("map")
       })),
-      R.pipe(R.length,Ct.assertEquals(1)))),
-]));
+      R.pipe(R.length, Ct.assertEquals(1)))),
+]);
 
-Ct.getPositionActionsSpec = Ct.specification("get position actions", () => ([
+Ct.getPositionActionsSpec = Ct.specification("get position actions", [
   Ct.expectation("shows wait when unit is selected", Ct.assertNeverCalled),
   Ct.expectation("shows fire rocket when unit is selected and position contains a silo", Ct.assertNeverCalled),
   Ct.expectation("shows capture when unit is selected, can capture and position contains an enemy property", Ct.assertNeverCalled),
@@ -1780,9 +1781,9 @@ Ct.getPositionActionsSpec = Ct.specification("get position actions", () => ([
   Ct.expectation("shows load unit when unit is selected, own transporter is at the target and transporter can load unit", Ct.assertNeverCalled),
   Ct.expectation("shows yield game when nothing is selected", Ct.assertNeverCalled),
   Ct.expectation("shows nextTurn when nothing is selected", Ct.assertNeverCalled)
-]));
+]);
 
-Ct.getUnitMoveMapSpec = Ct.specification("get unit move map", () => ([
+Ct.getUnitMoveMapSpec = Ct.specification("get unit move map", [
   Ct.expectation("recognizes move range", Ct.assertNeverCalled),
   Ct.expectation("recognizes left fuel", Ct.assertNeverCalled),
   Ct.expectation("recognizes movable fields that are visible and occuppied by enemy units as non-movable", Ct.assertNeverCalled),
@@ -1793,16 +1794,16 @@ Ct.getUnitMoveMapSpec = Ct.specification("get unit move map", () => ([
   Ct.expectation("returned data contains move map", Ct.assertNeverCalled),
   Ct.expectation("returned data contains move range", Ct.assertNeverCalled),
   Ct.expectation("returned move range is minimum type.moveRange, unit.fuel", Ct.assertNeverCalled)
-]));
+]);
 
-Ct.getUnitAttackMapSpec = Ct.specification("get unit attack map", () => ([
+Ct.getUnitAttackMapSpec = Ct.specification("get unit attack map", [
   Ct.expectation("recognizes move range of direct units", Ct.assertNeverCalled),
   Ct.expectation("recognizes left fuel of direct units", Ct.assertNeverCalled),
   Ct.expectation("ignores move range of indirect units", Ct.assertNeverCalled),
   Ct.expectation("returned data contains attack map", Ct.assertNeverCalled)
-]));
+]);
 
-Ct.gameSpec = Ct.specification("CustomWars Tactics: Game Engine 0.35.950", [
+Ct.gameSpec = Ct.specification("CustomWars Tactics: Game Engine 0.35.951", [
   Ct.createGameSpec,
   Ct.waitSpec,
   Ct.captureSpec,
@@ -1834,4 +1835,5 @@ Ct.testBlock = RExt
   .map(any => Ct.gameSpec())
   .map(R.tap(any => Ct.log("Finished specification test")))
   .map(R.tap(any => Ct.log("Results: ")))
+  .map(R.tap(x => console.log(x)))
   .map(R.tap(Ct.log));
