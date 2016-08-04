@@ -1,6 +1,84 @@
 /*global R, RExt, Cg*/
 
-var Ct = window.Ct || (window.Ct = {});
+var Ct = typeof process != "undefined" ?
+  (exports.Ct = {}) :
+  (window.Ct || (window.Ct = {}));
+
+Ct.assertThat = (expression, msg) =>
+  R.ifElse(
+    R.equals(true),
+    R.always({
+      expectation: "PASSED"
+    }),
+    R.always({
+      expectation: "FAILED",
+      reason: msg
+    }))(expression);
+
+Ct.assertNeverCalled =
+  any => Ct.assertThat(false, "unreachable point was reached: " + any);
+
+Ct.assertStartsWith = R.curry(
+  (startsWith, string) => Ct.assertThat(string.indexOf(startsWith) === 0, "expected: " + string + " to starts with " + startsWith));
+
+Ct.assertEquals = R.curry(
+  (expected, actual) => Ct.assertThat(expected === actual, "expected: " + expected + ", but was: " + actual));
+
+Ct.assertNotEquals = R.curry(
+  (expected, actual) => Ct.assertThat(expected !== actual, "expected different than: " + expected + ", but was equal"));
+
+Ct.specification = (description, expectations) => () => R.pipe(
+  R.always({
+    description,
+    type: "specification",
+    cases: R.map(expectation => expectation(), expectations),
+    status: {
+      executionTimeInMs: -1
+    }
+  }),
+  data => R.set(
+    RExt.nestedPath(["status", "executionTimeInMs"]),
+    R.reduce((sum, expectation) => sum + expectation.status.executionTimeInMs, 0, data.cases),
+    data),
+  data => R.set(
+    RExt.nestedPath(["status", "expectation"]),
+    R.any(R.where({
+      status: R.complement(R.equals("PASSED"))
+    }), data.cases),
+    data),
+  data => R.over(
+    RExt.nestedPath(["status", "expectation"]),
+    R.ifElse(
+      R.equals(true),
+      R.always("PASSED"),
+      R.always("FAILED")),
+    data)
+)();
+
+Ct.expectation = (description, expectation) => () => ({
+  description,
+  type: "expectation",
+  status: RExt
+    .IO(() => expectation)
+    .map(test => {
+      const startTime = Date.now();
+      const result = RExt.Either.tryIt(test).fold(
+        err => ({
+          status: "CRASHED",
+          reason: err.message
+        }),
+        R.identity);
+      const executionTimeInMs = Date.now() - startTime;
+      return {
+        executionTimeInMs,
+        status: result.expectation,
+        reason: RExt.Maybe(result.reason).toString()
+      };
+    })
+    .run()
+});
+
+Ct.foldEither = R.invoker(2, "fold");
 
 Ct.testGameModel = Object.freeze({
   "fog": R.times(() => R.times(() => R.F, 10), 10),
@@ -91,82 +169,6 @@ Ct.testGameModel = Object.freeze({
     "WSUN": {}
   }
 });
-
-Ct.assertThat = (expression, msg) => R.ifElse(
-  R.equals(true),
-  R.always({
-    expectation: "PASSED"
-  }),
-  R.always({
-    expectation: "FAILED",
-    reason: msg
-  }))(expression);
-
-Ct.assertNeverCalled =
-  any => Ct.assertThat(false, "unreachable point was reached: " + any);
-
-Ct.assertStartsWith = R.curry(
-  (startsWith, string) => Ct.assertThat(string.indexOf(startsWith) === 0, "expected: " + string + " to starts with " + startsWith));
-
-Ct.assertEquals = R.curry(
-  (expected, actual) => Ct.assertThat(expected === actual, "expected: " + expected + ", but was: " + actual));
-
-Ct.assertNotEquals = R.curry(
-  (expected, actual) => Ct.assertThat(expected !== actual, "expected different than: " + expected + ", but was equal"));
-
-Ct.specification = (description, expectations) => () => R.pipe(
-  R.always({
-    description,
-    type: "specification",
-    cases: R.map(expectation => expectation(), expectations),
-    status: {
-      executionTimeInMs: -1
-    }
-  }),
-  data => R.set(
-    RExt.nestedPath(["status", "executionTimeInMs"]),
-    R.reduce((sum, expectation) => sum + expectation.status.executionTimeInMs, 0, data.cases),
-    data),
-  data => R.set(
-    RExt.nestedPath(["status", "result"]), !R.any(R.where({
-      status: R.where({
-        result: R.where({
-          expectation: R.equals("FAILED")
-        })
-      })
-    }), data.cases),
-    data),
-  data => R.over(
-    RExt.nestedPath(["status", "result"]),
-    R.ifElse(
-      R.equals(true),
-      R.always({
-        expectation: "PASSED"
-      }),
-      R.always({
-        expectation: "FAILED"
-      })),
-    data)
-)();
-
-Ct.expectation = (description, expectation) => () => ({
-  description,
-  type: "expectation",
-  status: RExt
-    .IO(() => expectation)
-    .map(test => {
-      const startTime = Date.now();
-      const result = RExt.Either.tryIt(test).fold(R.always("FAILED WITH ERROR"), R.identity);
-      const executionTimeInMs = Date.now() - startTime;
-      return {
-        executionTimeInMs,
-        result
-      };
-    })
-    .run()
-});
-
-Ct.foldEither = R.invoker(2, "fold");
 
 Ct.createGameSpec = Ct.specification("Create-Game", [
   Ct.expectation("declines illegal weather types", Ct.assertNeverCalled),
@@ -1825,9 +1827,45 @@ Ct.gameSpec = Ct.specification("CustomWars Tactics: Game Engine 0.35.951", [
   Ct.getUnitAttackMapSpec
 ]);
 
-Ct.toHtml = content => JSON.stringify(content, null, 2).replace(/\n/gi, "</br>").replace(/\s/gi, "&nbsp;");
+Ct.toHtml = content => (content + "").replace(/\n/gi, "</br>").replace(/\s/gi, "&nbsp;");
 
 Ct.log = msg => document.getElementById("devOUT").innerHTML += Ct.toHtml(msg) + "</br>";
+
+Ct.nWhitespaces = R.pipe(R.times(R.always(" ")), R.join(""));
+
+Ct.whitespacesForIndentionLevel = R.pipe(R.multiply(4), Ct.nWhitespaces);
+
+Ct.convertSpecResultToText = R.curryN(2, (level, object) => R.cond([
+  [R.compose(
+      R.equals("Array"),
+      R.type,
+      R.prop("cases")),
+    data => R.useWith(
+      (a, b) => Ct.whitespacesForIndentionLevel(level) + "Specification: " + a + "\n" + b, [
+        R.prop("description"),
+        R.compose(
+          R.join("\n"),
+          R.map(Ct.convertSpecResultToText(level+1)),
+          R.prop("cases"))
+      ])(data, data)
+  ],
+  [R.compose(
+      R.equals("Object"),
+      R.type,
+      R.prop("status")),
+    data => R.useWith(
+      (a, b) => Ct.whitespacesForIndentionLevel(level) + "Expectation: " + a + " [" + b + "]", [
+        R.prop("description"),
+        R.compose(
+          R.ifElse(
+            R.propEq("status", "PASSED"), 
+            R.always("PASSED"), 
+            status => "FAILED due: " + status.reason),
+          R.prop("status"))
+      ])(data, data)
+  ],
+  [R.T, R.always("unexpected")]
+])(object) );
 
 Ct.testBlock = RExt
   .IO(() => true)
@@ -1835,5 +1873,5 @@ Ct.testBlock = RExt
   .map(any => Ct.gameSpec())
   .map(R.tap(any => Ct.log("Finished specification test")))
   .map(R.tap(any => Ct.log("Results: ")))
-  .map(R.tap(x => console.log(x)))
+  .map(Ct.convertSpecResultToText(0))
   .map(R.tap(Ct.log));

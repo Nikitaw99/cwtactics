@@ -105,7 +105,7 @@ RExt.mapTapLogger = R.map(RExt.tapLogger);
 // with the string "..."
 //
 // mapToFixedLength :: s -> s
-RExt.mapToFixedLength = R.curry((wantedLength, s) => R.cond([
+RExt.mapToFixedLength = R.curryN(2, (wantedLength, s) => R.cond([
   [R.propSatisfies(R.gt(R.__, wantedLength), "length"), R.pipe(R.take(wantedLength - 3), R.append("..."), R.join(""))],
   [R.propSatisfies(R.lt(R.__, wantedLength), "length"), s => {
     const rest = wantedLength - s.length;
