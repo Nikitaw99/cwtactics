@@ -81,25 +81,30 @@ Ct.expectation = (description, expectation) => () => ({
 Ct.foldEither = R.invoker(2, "fold");
 
 Ct.testGameModel = Object.freeze({
-  "fog": R.times(() => R.times(() => R.F, 10), 10),
-  "map": {
-    "tiles": R.times(() => R.times(() => R.clone({
-      type: "PLIN"
-    }), 10), 10)
-  },
+  
+  "fog": R.times(R.F, 100),
+  
+  "map": R.times(R.always("TITA"), 100),
+  
+  "actables": R.times(R.F, 50),
+  
   "tileTypes": {},
+  
   "cfg": {},
+  
   "turn": {
     "day": 0,
     "owner": 0
   },
-  "players": R.times(() => R.clone({
-    "name": "Player",
-    "team": 1,
+  
+  "players": R.times(i => ({
+    "name": "Player " + i,
+    "team": i,
     "gold": 0,
     "power": 0,
     "activePowerLevel": 1
   }), 4),
+  
   "properties": R.times(i => R.clone({
     "type": "PRTA",
     "points": 20,
@@ -107,6 +112,7 @@ Ct.testGameModel = Object.freeze({
     "x": parseInt(i / 10, 10),
     "y": i % 10
   }), 300),
+  
   "units": R.times(i => R.clone({
     "hp": 99,
     "owner": -1,
@@ -115,17 +121,19 @@ Ct.testGameModel = Object.freeze({
     "x": parseInt(i / 10, 10),
     "y": i % 10
   }), 200),
+  
   "weather": {
-    "day": 0,
-    "type": ""
+    "leftDays": 4,
+    "type": "WTHA"
   },
-  "actables": R.times(R.F, 50),
+  
   "limits": {
-    "leftDays": null,
-    "leftTurnTime": null,
-    "leftGameTime": null,
+    "leftDays": 999,
+    "leftTurnTime": 999999999,
+    "leftGameTime": 999999999,
     "minimumProperties": 0
   },
+  
   "unitTypes": {
     "UNTA": {
       "moveType": "MVTA"
@@ -150,32 +158,107 @@ Ct.testGameModel = Object.freeze({
       }
     }
   },
+  
   "moveTypes": {
     "MVTA": {
       "costs": {
         "TITA": 2,
+        "TITB": 3,
+        "*": 1
+      }
+    },
+    "MVTB": {
+      "costs": {
+        "TITA": 1,
+        "*": 0
+      }
+    },
+    "MVTC": {
+      "costs": {
+        "TITA": 0,
+        "TITB": 1, 
         "*": 1
       }
     }
   },
+  
   "propertyTypes": {
     "PRTA": {
       "funds": 1000,
       "builds": ["UNTA"]
     },
-    "PRTB": {}
+    "PRTB": {
+      "repairs": ["UNTA"]
+    },
+    "PRTC": {
+      "funds": 0
+    },
+    "PRTD": {
+      "loosesAfterCaptured": true
+    }
   },
+  
   "weatherTypes": {
-    "WSUN": {}
+    "WTHA": {
+      "duration": 3
+    }
   }
 });
 
-Ct.createGameSpec = Ct.specification("Create-Game", [
-  Ct.expectation("declines illegal weather types", Ct.assertNeverCalled),
-  Ct.expectation("declines illegal property types", Ct.assertNeverCalled),
-  Ct.expectation("declines illegal unit types", Ct.assertNeverCalled),
-  Ct.expectation("declines illegal move types", Ct.assertNeverCalled),
-  Ct.expectation("declines illegal limits", Ct.assertNeverCalled),
+Ct.assertEitherLeft = f => Ct.foldEither(f, Ct.assertNeverCalled);
+
+Ct.assertEitherRight = f => Ct.foldEither(Ct.assertNeverCalled, f);
+
+Ct.gameModelSpec = Ct.specification("Game Model", [
+  Ct.expectation("declines illegal weather types",
+    R.pipe(
+      R.always(Ct.testGameModel),
+      R.set(RExt.nestedPath(["weather", "type"]), "UKNOWN"),
+      Cg.createGame,
+      Ct.assertEitherLeft(Ct.assertStartsWith("iae:iot:iwt")))),
+
+  Ct.expectation("declines illegal property types",
+    R.pipe(
+      R.always(Ct.testGameModel),
+      R.set(RExt.nestedPath(["properties", 0]), "UKNOWN"),
+      Cg.createGame,
+      Ct.assertEitherLeft(Ct.assertStartsWith("iae:iot:prt")))),
+
+  Ct.expectation("declines illegal unit types",
+    R.pipe(
+      R.always(Ct.testGameModel),
+      R.set(RExt.nestedPath(["units", 0]), "UKNOWN"),
+      Cg.createGame,
+      Ct.assertEitherLeft(Ct.assertStartsWith("iae:iot:unt")))),
+
+  Ct.expectation("declines illegal move types",
+    R.pipe(
+      R.always(Ct.testGameModel),
+      R.set(RExt.nestedPath(["unitTypes", "UNTA", "moveType"]), "UKNOWN"),
+      Cg.createGame,
+      Ct.assertEitherLeft(Ct.assertStartsWith("iae:iot:mvt")))),
+
+  Ct.expectation("declines illegal limits (negative game time limit)",
+    R.pipe(
+      R.always(Ct.testGameModel),
+      R.set(RExt.nestedPath(["limits", "leftGameTime"]), -1),
+      Cg.createGame,
+      Ct.assertEitherLeft(Ct.assertStartsWith("iae:ivs:ngt")))),
+
+  Ct.expectation("declines illegal limits (negative turn time limit)",
+    R.pipe(
+      R.always(Ct.testGameModel),
+      R.set(RExt.nestedPath(["limits", "leftTurnTime"]), -1),
+      Cg.createGame,
+      Ct.assertEitherLeft(Ct.assertStartsWith("iae:ivs:ntt")))),
+
+  Ct.expectation("declines illegal limits (negative game time limit)",
+    R.pipe(
+      R.always(Ct.testGameModel),
+      R.set(RExt.nestedPath(["limits", "leftDays"]), -1),
+      Cg.createGame,
+      Ct.assertEitherLeft(Ct.assertStartsWith("iae:ivs:ndv")))),
+
   Ct.expectation("declines illegal actables", Ct.assertNeverCalled),
   Ct.expectation("declines illegal weathers", Ct.assertNeverCalled),
   Ct.expectation("declines illegal units", Ct.assertNeverCalled),
@@ -187,6 +270,10 @@ Ct.createGameSpec = Ct.specification("Create-Game", [
   Ct.expectation("declines illegal map", Ct.assertNeverCalled),
   Ct.expectation("declines illegal fog", Ct.assertNeverCalled),
   Ct.expectation("creates valid model", Ct.assertNeverCalled)
+]);
+
+Ct.createGameSpec = Ct.specification("Create-Game", [
+  Ct.gameModelSpec
 ]);
 
 Ct.moveSpec = Ct.specification("Unit-Movement", [
@@ -206,7 +293,7 @@ Ct.nextTurnSpec = Ct.specification("map action: next turn", [
       R.always(Ct.testGameModel),
       Cg.nextTurn,
       R.map(R.view(R.lensPath(["turn", "owner"]))),
-      Ct.foldEither(Ct.assertNeverCalled, Ct.assertNotEquals(Ct.testGameModel.turn.owner)))),
+      Ct.assertEitherRight(Ct.assertNotEquals(Ct.testGameModel.turn.owner)))),
 
   Ct.expectation("when the last player ends his turn, then the day counter increases",
     R.pipe(
@@ -291,10 +378,14 @@ Ct.captureSpec = Ct.specification("Unit-Action: Capture", [
     R.pipe(
       R.always(Ct.testGameModel),
       R.set(RExt.nestedPath(["actables", 0]), true),
-      R.set(RExt.nestedPath(["units", 0, "x"]), 1),
-      R.set(RExt.nestedPath(["units", 0, "y"]), 1),
-      R.set(RExt.nestedPath(["properties", 0, "x"]), 2),
-      R.set(RExt.nestedPath(["properties", 0, "y"]), 2),
+      R.over(RExt.nestedPath(["units", 0]), R.evolve({
+        x: R.always(1),
+        y: R.always(1)
+      })),
+      R.over(RExt.nestedPath(["properties", 0]), R.evolve({
+        x: R.always(2),
+        y: R.always(2)
+      })),
       R.curry(Cg.captureProperty)(0, 0),
       Ct.foldEither(Ct.assertStartsWith("IAE-SFE"), Ct.assertNeverCalled)
     )),
@@ -1845,7 +1936,7 @@ Ct.convertSpecResultToText = R.curryN(2, (level, object) => R.cond([
         R.prop("description"),
         R.compose(
           R.join("\n"),
-          R.map(Ct.convertSpecResultToText(level+1)),
+          R.map(Ct.convertSpecResultToText(level + 1)),
           R.prop("cases"))
       ])(data, data)
   ],
@@ -1858,14 +1949,14 @@ Ct.convertSpecResultToText = R.curryN(2, (level, object) => R.cond([
         R.prop("description"),
         R.compose(
           R.ifElse(
-            R.propEq("status", "PASSED"), 
-            R.always("PASSED"), 
+            R.propEq("status", "PASSED"),
+            R.always("PASSED"),
             status => "FAILED due: " + status.reason),
           R.prop("status"))
       ])(data, data)
   ],
   [R.T, R.always("unexpected")]
-])(object) );
+])(object));
 
 Ct.testBlock = RExt
   .IO(() => true)

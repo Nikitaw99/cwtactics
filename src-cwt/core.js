@@ -117,6 +117,9 @@ RExt.mapToFixedLength = R.curryN(2, (wantedLength, s) => R.cond([
 RExt.raiseError = error => {
   throw new Error(error);
 };
+    
+RExt.intBetween = R.curryN(3, 
+  (x, y, actual) => actual % 1 === actual && R.gte(actual, x) && R.lte(actual, y));
 
 // ------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------ DEPRECATED ------------------------------------------------------

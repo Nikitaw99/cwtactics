@@ -381,7 +381,12 @@ var Cg = window.Cg || (window.Cg = {});
   const isValidGameData = (data) => just(data)
     .filter(data => isInteger(data.width) && data.width >= 10 && data.width <= 50)
     .filter(data => isInteger(data.height) && data.height >= 10 && data.height <= 50)
-    .isPresent()
+    .isPresent();
+  
+  exports.isValidGameModel = R.where({
+    width: RExt.intBetween(10, 50),
+    height: RExt.intBetween(10, 50)
+  });
 
   // (GameData) => either Error, GameModel
   const gameModelFactory = data => eitherRight(data)
