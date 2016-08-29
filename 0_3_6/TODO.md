@@ -1,4 +1,15 @@
-* No server grab from data files
+### New 
+
+* MERGE DATA INTO SOURCE CODE
+  * [ ] game data
+  * [ ] game image assets
+  * [ ] game sound assets
+* TILE DATA PANEL SHOULD SWITCH SIDE WHEN CURSOR ENTERS THE ACTIVE HALF OF THE SCREEN
+* GAME MENU SHOULD OPEN AT THE POSITION OF THE CLICK
+
+### Old
+
+* Server path should be grabbed from constants (even for data files)
 * Remove Shadow in the ingame action menu
 * Place ingame action menu at mouse position and regocnize game borders 
 * Minimap during game round 

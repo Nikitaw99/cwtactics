@@ -21,6 +21,9 @@ view.registerAnimationHook({
 
     view.preventRenderUnit = model.unit_data[ uid ];
     var mvType = model.unit_data[ uid ].type.movetype;
+    
+    const TILE_PER_SEC = 12; 
+    this.PX_PER_MS = TILE_LENGTH / (1000 / TILE_PER_SEC);
 
     if( DEBUG ){
       util.log(
@@ -34,9 +37,8 @@ view.registerAnimationHook({
 
   update: function( delta ){
     var tileSize = TILE_LENGTH;
-
-    // MOVE 4 TILES / SECOND
-    this.moveAnimationShift += ( delta/1000 ) * ( tileSize*8);
+    
+    this.moveAnimationShift += parseInt(this.PX_PER_MS * delta, 10);
 
     view.redraw_markPosWithNeighboursRing(
       this.moveAnimationX, this.moveAnimationY
@@ -161,27 +163,7 @@ view.registerAnimationHook({
         tcw,tcw
       );
     }
-    else{
-      tcx = ( cx )*tileSize;
-      tcy = ( cy )*tileSize;
-      tcw = tileSize;
-      tch = tileSize;
-
-      // ADD SHIFT
-      switch( moveCode ){
-        case model.move_MOVE_CODES.UP:    tcy -= shift; break;
-        case model.move_MOVE_CODES.LEFT:  tcx -= shift; break;
-        case model.move_MOVE_CODES.RIGHT: tcx += shift; break;
-        case model.move_MOVE_CODES.DOWN:  tcy += shift; break;
-      }
-
-      view.canvasCtx.fillStyle="rgb(255,0,0)";
-      view.canvasCtx.fillRect(
-        tcx,tcy,
-        tcw,tch
-      );
-    }
-
+    
     // DUST
     if( this.moveAnimationDustStep !== -1 ){
 
