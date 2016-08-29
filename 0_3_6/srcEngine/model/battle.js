@@ -37,7 +37,7 @@ model.battle_calculateTargets = function( uid, x, y, data, markAttackableTiles )
   if(!markAttackableTiles) markAttackableTiles = false;
 
   assert( model.unit_isValidUnitId(uid) );
-  if( markInData ) data.setCenter(x,y,INACTIVE_ID);
+  if(!markAttackableTiles && markInData ) data.setCenter(x,y,INACTIVE_ID);
 
   var unit        = model.unit_data[uid];
   var teamId      = model.player_data[unit.owner].team;
