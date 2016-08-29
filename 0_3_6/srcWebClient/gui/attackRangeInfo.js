@@ -50,6 +50,7 @@ util.scoped(function(){
       }
     }
     
+    view.redraw_markSelection( controller.stateMachine.data );
     controller.attackRangeVisible = true;
   };
   
