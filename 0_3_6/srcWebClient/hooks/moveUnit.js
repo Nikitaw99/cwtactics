@@ -22,7 +22,7 @@ view.registerAnimationHook({
     view.preventRenderUnit = model.unit_data[ uid ];
     var mvType = model.unit_data[ uid ].type.movetype;
     
-    const TILE_PER_SEC = 12; 
+    const TILE_PER_SEC = 8; 
     this.PX_PER_MS = TILE_LENGTH / (1000 / TILE_PER_SEC);
 
     if( DEBUG ){

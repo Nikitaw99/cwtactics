@@ -4,36 +4,47 @@
   * [ ] game data
   * [ ] game image assets
   * [ ] game sound assets
-* TILE DATA PANEL SHOULD SWITCH SIDE WHEN CURSOR ENTERS THE ACTIVE HALF OF THE SCREEN
-* GAME MENU SHOULD OPEN AT THE POSITION OF THE CLICK
+* [ ] TILE DATA PANEL SHOULD SWITCH SIDE WHEN CURSOR ENTERS THE ACTIVE HALF OF THE SCREEN
+* [ ] GAME MENU SHOULD OPEN AT THE POSITION OF THE CLICK
+* [ ] MINIMAP SHOULD BE CLOSABLE WITH RIGHT MOUSE BUTTON
+* [ ] NO CUSTOM DATA PATH
+* [ ] DEPLOY DATA TO DIST (GAME LOADS DATA FROM ITS OWN LOCATION)
+* [ ] UI RELAYOUT
+* [ ] UI RESIZE WITH DIFFERENT SCREEN SIZES
+* [ ] FIREFOX ROCKET-FLY BUG
+* [ ] REWRITE ROCKET, LASER AND CANNON ANIMATIONS
 
-### Old
+### FEATURES 
 
-* Server path should be grabbed from constants (even for data files)
-* Remove Shadow in the ingame action menu
-* Place ingame action menu at mouse position and regocnize game borders 
-* Minimap during game round 
-  * Uses 4x4 algorithm
-  * Activates by input B
-  * Places a bigger black alpha div in front 
-  * Places the minimap in front of all
-  * Move the map and the minimap by left,right,up and down
-* Minimap generation in the map selection
-  * Blocks input when a map is selected
-  * Use 2x2 algorithm for the map
-* Minimap graphics will be defined in the assets.json or graphics.json
-* Smooth center map algorithms
-* Left/Right algorithm for the hot tile information popup ( screen based )
-* Disable screen scrolling when side is smaller than the screen 
-* Dynamic sizes for the game menu
-* Calculate property meta data during map selection based on the modification settings
-* Remove game mode selection ( will be done by the modification )
-* Firefox rocket flying bug
-* Rewrite cannon and laser rendering
-* Upload background for the game round ( visible when map is smaller than the screen )
-* DumbBoy AI
-  * Move to the enemy HQ
-  * Move to properties when enemy is in sight
-  * Build in a more intelligent way
-  * Fix move randomizer
-* Replace the central messages by a floating text ( similar but not equal to the original AW )
+* Network Lobby (“Live” Synchronous, “Hotseat”, & Asynchronous Play)
+  * [ ] In-Game Timer (Flexible Timer – Unit, Turn, Turn Number, Fixed)
+* [ ] Commanding Officers
+* Damage Formula
+  * [X] Display in an Information Box
+  * [ ] Map Editors (Map with all units)
+  * Cheat Codes
+    * [ ] Infinite Funds
+    * [ ] Drain all Primary Ammo
+  * [ ] Non-aggressive AI (Make AI more aggressive)
+  * [ ] Same control scheme throughout the entire game
+  * [ ] No unit movement sounds
+
+### The Bad – Small Bugs
+
+* [?] Android (Opera) – Sidebar doesn’t show
+* [ ] Apple iOS (Safari) – IndexedDB error
+* [ ] Apple iOS (Chrome) – Game doesn’t load
+* [X] Options.ForceTouch – More clear representation
+* [X] Key Map – Independent mappings/ Default Keys
+* [ ] APC’s no visual refuel
+* [X] FOW – Option to turn off
+* [ ] Minor Language quips (STSN, Forrest, War Tanks)
+
+### The Ugly – Major Bugs
+
+* [ ] Can’t win via route, only CO capture
+* [ ] Team Select/Days – Start from “1” not “0”
+* [ ] APC’s can’t manually repair units
+* [ ] CO abilities – Non-existent
+* [ ] Enemy units randomly take damage
+* [ ] Cursor – Noise jarring when moving fast

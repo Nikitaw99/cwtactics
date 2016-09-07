@@ -173,6 +173,8 @@ view.resizeCanvas = function(){
   var canvEl = controller.screenElement;
   canvEl.width = TILE_LENGTH*model.map_width;
   canvEl.height = TILE_LENGTH*model.map_height;
+  view.offsetCanvas.width = canvEl.width;
+  view.offsetCanvas.height = canvEl.height;
   view.updateScreenPosition();
 };
 

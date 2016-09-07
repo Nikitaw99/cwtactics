@@ -2,7 +2,9 @@ var builder = require( "./buildLibrary.js" );
 
 // -------------- build code --------------
 
-var PATH =  " "+builder.dirJsToString("srcWebClient/libs")+" "+
+var PATH =  " "+
+      builder.dirJsToString("srcCustomWarsTactics")+" "+
+      builder.dirJsToString("srcWebClient/libs")+" "+
 			builder.dirJsToString("srcWebClient/core")+" "+
 			builder.dirJsToString("srcWebClient/controller")+" "+
 			builder.dirJsToString("srcWebClient/data")+" "+

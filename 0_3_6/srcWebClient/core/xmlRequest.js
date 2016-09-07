@@ -58,6 +58,8 @@ util.scoped(function () {
     // META DATA
     oReq.onreadystatechange = reqListener;
     oReq.open("get", options.path+"?_cwtR="+parseInt(10000*Math.random(),10), true);
+    oReq.setRequestHeader( 'Access-Control-Allow-Origin', '*');
+    oReq.setRequestHeader( 'Content-Type', 'application/json' );
 
     // SEND IT
     oReq.send();

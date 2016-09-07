@@ -1,3 +1,5 @@
+/* global bcFC */
+
 // Model namespace. Holds the complete game model.
 //
 var model = {};
@@ -6,6 +8,6 @@ var model = {};
 //
 var controller = {};
 
-// Utility namespace.
-//
+var cwt = {};
+
 var util = {};

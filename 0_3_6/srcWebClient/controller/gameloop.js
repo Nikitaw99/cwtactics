@@ -70,7 +70,10 @@ util.scoped(function() {
     }
 
     // RENDER SCREEN
-    if (view.redraw_dataChanges > 0) view.renderMap(controller.screenScale);
+    if (view.redraw_dataChanges > 0) {
+      view.renderMap(controller.screenScale);
+      cwt.drawMovePath();
+    }
 
     // RENDER ACTIVE HOCK AND POP NEXT ONE WHEN DONE
     if (hasHocks) {
@@ -78,6 +81,7 @@ util.scoped(function() {
     }
     else {
 
+// TODO move into move cursor
       // UPDATE SELECTION CURSOR
       if (controller.stateMachine.state === "ACTION_SELECT_TILE") {
 

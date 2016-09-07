@@ -14,9 +14,13 @@ view.redraw_MODE = {
   CIRCLE: 1
 };
 
+view.redraw_force_markPos = function(x, y, sizeX, sizeY, redrawMode) {
+  view.redraw_markPos(x, y, sizeX, sizeY, redrawMode, true);
+};
+
 // 
 // 
-view.redraw_markPos = function(x, y, sizeX, sizeY, redrawMode) {
+view.redraw_markPos = function(x, y, sizeX, sizeY, redrawMode, forced) {
 
   // prepare size parameters
   if (typeof sizeX !== "number") sizeX = 0;
@@ -24,14 +28,15 @@ view.redraw_markPos = function(x, y, sizeX, sizeY, redrawMode) {
   if (typeof sizeY !== "number") sizeY = 0;
   else sizeY--;
   if (typeof redrawMode === "undefined") redrawMode = view.redraw_MODE.RECTANGLE;
+  forced = !!forced;
 
   var isCircleMode = (redrawMode === view.redraw_MODE.CIRCLE);
 
   var ox = x;
   var oy = y;
   if (isCircleMode) {
-    x -= sizeX;
-    y -= sizeY;
+    x -= Math.max(sizeX, 0);
+    y -= Math.max(sizeX, 0);
   }
 
   var xe = Math.min(x + sizeX, model.map_width - 1);
@@ -45,17 +50,19 @@ view.redraw_markPos = function(x, y, sizeX, sizeY, redrawMode) {
       if (x < 0 || y < 0 || x >= model.map_width || y >= model.map_height) break;
 
       // skip if this tile was already checked
-      if (view.redraw_data[x][y]) {
+      if (!forced && view.redraw_data[x][y]) {
         y++;
         if (y <= ye) continue;
         else break;
       }
 
       if (!isCircleMode || (Math.abs(x - ox) + Math.abs(y - oy) <= sizeX)) {
-
-        // mark tile for rerendering
-        view.redraw_data[x][y] = true;
         view.redraw_dataChanges++;
+        view.redraw_data[x][y] = true;
+        cwt.drawAllThingsOnTile(x, y);
+        if (y + 1 < model.map_height) {
+          view.redraw_data[x][y] = false;
+        }
       }
 
       // check special properties
@@ -85,15 +92,17 @@ view.redraw_markPos = function(x, y, sizeX, sizeY, redrawMode) {
       break;
     }
   }
+
 };
 
 // Invokes a complete redraw of the view.
 //
 view.redraw_markAll = function() {
-  view.redraw_dataChanges = 1;
   for (var x = 0, xe = model.map_width; x < xe; x++) {
     for (var y = 0, ye = model.map_height; y < ye; y++) {
+      view.redraw_dataChanges++;
       view.redraw_data[x][y] = true;
+      cwt.drawAllThingsOnTile(x, y);
     }
   }
 };
@@ -101,11 +110,11 @@ view.redraw_markAll = function() {
 // 
 // 
 view.redraw_markSelection = function(scope) {
-  var cx = scope.selection.centerX;
-  var cy = scope.selection.centerY;
-  var data = scope.selection.data;
-
-  view.redraw_markPos(cx, cy, data.length, data.length, view.redraw_MODE.RECTANGLE);
+  scope.selection.forEach(function(x, y, value) {
+    if (value >= 0) {
+      view.redraw_markPos(x, y, 0, 0, view.redraw_MODE.RECTANGLE);
+    }
+  });
 };
 
 // Rerenders a tile and all 4 neightbours in a plus around it.

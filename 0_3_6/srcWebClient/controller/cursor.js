@@ -11,7 +11,7 @@ controller.mapCursorY = 0;
 /**
  *
  */
-controller.resetMapCursor = function(){
+controller.resetMapCursor = function() {
   controller.mapCursorX = 0;
   controller.mapCursorY = 0;
 };
@@ -20,43 +20,43 @@ controller.resetMapCursor = function(){
  *
  * @param isCancel if true then it is a cancel action
  */
-controller.cursorAction = function( isCancel ){
+controller.cursorAction = function(isCancel) {
 
   // BREAK IF YOU ARE IN THE ANIMATION PHASE
-  if( controller.inAnimationHookPhase() ) return;
+  if (controller.inAnimationHookPhase()) return;
 
   var bstate = controller.stateMachine.state;
-  var bfocus = ( bstate === "MOVEPATH_SELECTION" ||
-                bstate === "IDLE_R" ||
-                bstate === "ACTION_SELECT_TARGET_A" ||
-                bstate === "ACTION_SELECT_TARGET_B" );
+  var bfocus = (bstate === "MOVEPATH_SELECTION" ||
+    bstate === "IDLE_R" ||
+    bstate === "ACTION_SELECT_TARGET_A" ||
+    bstate === "ACTION_SELECT_TARGET_B");
 
   // INVOKE ACTION
-  if( isCancel ){
-    controller.stateMachine.event("cancel", controller.mapCursorX, controller.mapCursorY );
+  if (isCancel) {
+    controller.stateMachine.event("cancel", controller.mapCursorX, controller.mapCursorY);
   }
-  else{
-    if( controller.menuVisible ){
-      controller.stateMachine.event( "action",controller.menu_getSelectedIndex() );
+  else {
+    if (controller.menuVisible) {
+      controller.stateMachine.event("action", controller.menu_getSelectedIndex());
     }
     else {
-      controller.stateMachine.event( "action", controller.mapCursorX, controller.mapCursorY );
+      controller.stateMachine.event("action", controller.mapCursorX, controller.mapCursorY);
     }
   }
 
   var astate = controller.stateMachine.state;
-  var afocus = ( astate === "MOVEPATH_SELECTION" ||
-                astate === "IDLE_R" ||
-                astate === "ACTION_SELECT_TARGET_A" ||
-                astate === "ACTION_SELECT_TARGET_B"  );
+  var afocus = (astate === "MOVEPATH_SELECTION" ||
+    astate === "IDLE_R" ||
+    astate === "ACTION_SELECT_TARGET_A" ||
+    astate === "ACTION_SELECT_TARGET_B");
 
   // RERENDERING
-  if( ( bfocus && !afocus ) || afocus ){
-    view.redraw_markSelection( controller.stateMachine.data );
+  if ((bfocus && !afocus) || afocus) {
+    view.redraw_markSelection(controller.stateMachine.data);
   }
 
   // MENU
-  if( astate === "ACTION_MENU" || astate === "ACTION_SUBMENU" ){
+  if (astate === "ACTION_MENU" || astate === "ACTION_SUBMENU") {
 
     var menu = controller.stateMachine.data.menu;
     controller.showMenu(
@@ -65,15 +65,15 @@ controller.cursorAction = function( isCancel ){
       controller.mapCursorY
     );
   }
-  else{
-    if( bstate === "ACTION_MENU" || bstate === "ACTION_SUBMENU" ) controller.hideMenu();
+  else {
+    if (bstate === "ACTION_MENU" || bstate === "ACTION_SUBMENU") controller.hideMenu();
   }
 };
 
 /**
  *
  */
-controller.cursorActionCancel = function(){
+controller.cursorActionCancel = function() {
   controller.cursorAction(true);
   controller.audio_playSound(model.data_sounds.CANCEL);
 };
@@ -81,7 +81,7 @@ controller.cursorActionCancel = function(){
 /**
  *
  */
-controller.cursorActionClick = function(){
+controller.cursorActionClick = function() {
   controller.cursorAction(false);
   controller.audio_playSound(model.data_sounds.MENUTICK);
 };
@@ -91,20 +91,28 @@ controller.cursorActionClick = function(){
  * @param dir
  * @param len
  */
-controller.moveCursor = function( dir, len ){
-  if( arguments.length === 1 ) len = 1;
+controller.moveCursor = function(dir, len) {
+  if (arguments.length === 1) len = 1;
 
   var x = controller.mapCursorX;
   var y = controller.mapCursorY;
 
-  switch( dir ){
-    case model.move_MOVE_CODES.UP    : y-=len; break;
-    case model.move_MOVE_CODES.RIGHT : x+=len; break;
-    case model.move_MOVE_CODES.DOWN  : y+=len; break;
-    case model.move_MOVE_CODES.LEFT  : x-=len; break;
+  switch (dir) {
+    case model.move_MOVE_CODES.UP:
+      y -= len;
+      break;
+    case model.move_MOVE_CODES.RIGHT:
+      x += len;
+      break;
+    case model.move_MOVE_CODES.DOWN:
+      y += len;
+      break;
+    case model.move_MOVE_CODES.LEFT:
+      x -= len;
+      break;
   }
 
-  controller.setCursorPosition(x,y);
+  controller.setCursorPosition(x, y);
 };
 
 /**
@@ -114,52 +122,51 @@ controller.moveCursor = function( dir, len ){
  * @param tx
  * @param ty
  */
-controller.setCursorPosition = function( x,y,relativeToScreen, preventSound ){
-  if( controller.isMenuOpen() ) return;
+controller.setCursorPosition = function(x, y, relativeToScreen, preventSound) {
+  if (controller.isMenuOpen()) return;
 
-  if( relativeToScreen ){
+  if (relativeToScreen) {
     x = x + controller.screenX;
     y = y + controller.screenY;
   }
 
-  if( x < 0 ) x = 0;
-  if( y < 0 ) y = 0;
-  if( x >= model.map_width ) x = model.map_width-1;
-  if( y >= model.map_height ) y = model.map_height-1;
+  if (x < 0) x = 0;
+  if (y < 0) y = 0;
+  if (x >= model.map_width) x = model.map_width - 1;
+  if (y >= model.map_height) y = model.map_height - 1;
 
-  if( x === controller.mapCursorX && y === controller.mapCursorY ) return;
+  if (x === controller.mapCursorX && y === controller.mapCursorY) return;
 
-  // CLEAN OLD
-  view.redraw_markPos( controller.mapCursorX, controller.mapCursorY );
-  if( controller.mapCursorY < model.map_height -1 ) view.redraw_markPos( controller.mapCursorX, controller.mapCursorY+1 );
+  const oldX = controller.mapCursorX;
+  const oldY = controller.mapCursorY;
 
   // in attack mode ? 
   //  yes -> show damage
   var dmg = -1;
   var state = controller.stateMachine.state;
-  if( state === "ACTION_SELECT_TARGET_A" ){
+  if (state === "ACTION_SELECT_TARGET_A") {
     var data = controller.stateMachine.data;
-    if( data.selection.getValueAt(x,y) > 0 ){
+    if (data.selection.getValueAt(x, y) > 0) {
       var targetUnit = model.unit_posData[x][y];
-      if( targetUnit ){
-        dmg = model.battle_getBattleDamageAgainst( 
-          data.source.unit, 
-          targetUnit, 
-          0, 
-          model.battle_canUseMainWeapon( 
-            data.source.unit, 
-            targetUnit 
-          ), 
-          false, 
+      if (targetUnit) {
+        dmg = model.battle_getBattleDamageAgainst(
+          data.source.unit,
+          targetUnit,
+          0,
+          model.battle_canUseMainWeapon(
+            data.source.unit,
+            targetUnit
+          ),
+          false,
           data.source.x,
-          data.source.y 
+          data.source.y
         );
       }
     }
   }
 
-  if( preventSound !== true ) controller.audio_playSound(model.data_sounds.MAPTICK);
-  view.redraw_markPos( controller.mapCursorX, controller.mapCursorY );
+  if (preventSound !== true) controller.audio_playSound(model.data_sounds.MAPTICK);
+  view.redraw_markPos(controller.mapCursorX, controller.mapCursorY);
 
   controller.mapCursorX = x;
   controller.mapCursorY = y;
@@ -167,36 +174,40 @@ controller.setCursorPosition = function( x,y,relativeToScreen, preventSound ){
   controller.updateSimpleTileInformation(dmg);
 
   var scale = controller.screenScale;
-  if( scale === 0 ) scale = 0.8;
-  else if( scale === -1 ) scale = 0.7;
+  if (scale === 0) scale = 0.8;
+  else if (scale === -1) scale = 0.7;
 
-  var scw = parseInt( parseInt( (window.innerWidth-80)/16,10 ) / scale ,10 );
-  var sch = parseInt( parseInt( (window.innerHeight-80)/16,10 ) / scale ,10 );
+  var scw = parseInt(parseInt((window.innerWidth - 80) / 16, 10) / scale, 10);
+  var sch = parseInt(parseInt((window.innerHeight - 80) / 16, 10) / scale, 10);
 
   // shift tile information panel if necessary
-  if( controller.sideSimpleTileInformationPanel < 0 && (x-controller.screenX) <  (scw*0.25) ) controller.moveSimpleTileInformationToRight();
-  if( controller.sideSimpleTileInformationPanel > 0 && (x-controller.screenX) >= (scw*0.75) ) controller.moveSimpleTileInformationToLeft();
+  if (controller.sideSimpleTileInformationPanel < 0 && (x - controller.screenX) < (scw * 0.25)) controller.moveSimpleTileInformationToRight();
+  if (controller.sideSimpleTileInformationPanel > 0 && (x - controller.screenX) >= (scw * 0.75)) controller.moveSimpleTileInformationToLeft();
 
   // extract move code
   var moveCode = -1;
-  if( x-controller.screenX <= 1 )          moveCode = model.move_MOVE_CODES.LEFT;
-  else if( x-controller.screenX >= scw-1 ) moveCode = model.move_MOVE_CODES.RIGHT;
-  else if( y-controller.screenY <= 1 )     moveCode = model.move_MOVE_CODES.UP;
-  else if( y-controller.screenY >= sch-1 ) moveCode = model.move_MOVE_CODES.DOWN;
+  if (x - controller.screenX <= 1) moveCode = model.move_MOVE_CODES.LEFT;
+  else if (x - controller.screenX >= scw - 1) moveCode = model.move_MOVE_CODES.RIGHT;
+  else if (y - controller.screenY <= 1) moveCode = model.move_MOVE_CODES.UP;
+  else if (y - controller.screenY >= sch - 1) moveCode = model.move_MOVE_CODES.DOWN;
 
   // shift screen of you're reach a border
-  if( moveCode !== -1 ){
-    controller.shiftScreenPosition( moveCode, 5 );
+  if (moveCode !== -1) {
+    controller.shiftScreenPosition(moveCode, 5);
   }
 
-  if( DEBUG ){
+  if (DEBUG) {
     util.log(
       "set cursor position to",
-      x,y,
+      x, y,
       "screen node is at",
-      controller.screenX,controller.screenY
+      controller.screenX, controller.screenY
     );
   }
 
-  view.redraw_markPos( x,y );
+  view.redraw_force_markPos(oldX, oldY);
+  if (oldY < model.map_height - 1) {
+    view.redraw_force_markPos(oldX, oldY + 1);
+  }
+  view.redraw_force_markPos(x, y);
 };
